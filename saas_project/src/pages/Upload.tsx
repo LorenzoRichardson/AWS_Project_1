@@ -11,18 +11,19 @@ export default function Upload() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TEMP: Just save in local state
     console.log("Patient form:", formData, file);
     setSubmitted(true);
   };
 
   return (
-    <div className="p-6">
+    <div className="max-w-md mx-auto p-6 bg-white rounded-2xl shadow-md mt-10">
       <h1 className="text-xl font-bold mb-4">Patient Form Upload</h1>
       {submitted ? (
-        <p className="text-green-600">Form submitted successfully!</p>
+        <p className="text-green-600 font-semibold">
+          ✅ Form submitted successfully!
+        </p>
       ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
             type="text"
             placeholder="Full Name"
@@ -30,16 +31,15 @@ export default function Upload() {
             onChange={(e) =>
               setFormData({ ...formData, name: e.target.value })
             }
-            className="border p-2"
+            className="border p-2 rounded-md"
           />
           <input
             type="date"
-            placeholder="Birthday"
             value={formData.birthday}
             onChange={(e) =>
               setFormData({ ...formData, birthday: e.target.value })
             }
-            className="border p-2"
+            className="border p-2 rounded-md"
           />
           <textarea
             placeholder="Health Info"
@@ -47,13 +47,17 @@ export default function Upload() {
             onChange={(e) =>
               setFormData({ ...formData, healthInfo: e.target.value })
             }
-            className="border p-2"
+            className="border p-2 rounded-md"
           />
           <input
             type="file"
             onChange={(e) => setFile(e.target.files?.[0] || null)}
+            className="border p-2 rounded-md"
           />
-          <button type="submit" className="bg-green-500 text-white p-2">
+          <button
+            type="submit"
+            className="bg-green-500 text-white p-2 rounded-md hover:bg-green-600 transition"
+          >
             Submit
           </button>
         </form>
