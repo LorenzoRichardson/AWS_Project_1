@@ -1,5 +1,5 @@
 // pages/Login.tsx
-import React, { useContext } from "react";
+import { useContext } from "react";
 import { Auth } from "aws-amplify";
 import { AuthContext } from "../App";
 

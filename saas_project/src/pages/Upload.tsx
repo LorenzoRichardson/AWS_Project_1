@@ -1,5 +1,5 @@
 // pages/Upload.tsx
-import React, { useContext, useState } from "react";
+import { useContext, useState } from "react";
 import { AuthContext } from "../App";
 
 export default function Upload() {
@@ -30,7 +30,8 @@ export default function Upload() {
       });
       if (!res.ok) throw new Error("failed to get upload url");
       const { uploadUrl, key } = await res.json();
-
+	console.log("Got signed URL for: ", key);
+	
       // PUT file directly to S3 using the presigned URL
       const put = await fetch(uploadUrl, {
         method: "PUT",
