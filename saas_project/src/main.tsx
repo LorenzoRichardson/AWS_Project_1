@@ -18,8 +18,8 @@ Amplify.configure({
     oauth: {
       domain,
       scope: ["openid", "email", "profile"],
-      redirectSignIn: appUrl,
-      redirectSignOut: appUrl,
+      redirectSignIn: "https://unmuttering-first-skyler.ngrok-free.dev/",
+      redirectSignOut: "https://unmuttering-first-skyler.ngrok-free.dev/",
       responseType: "code", // authorization code grant
     },
   } as any,
