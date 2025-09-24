@@ -1,49 +1,48 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+// pages/Login.tsx
+import React, { useContext } from "react";
+import { Auth } from "aws-amplify";
+import { AuthContext } from "../App";
 
 export default function Login() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const navigate = useNavigate();
+  const { setSession } = useContext(AuthContext);
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // TEMP: Hardcoded login
-    if (username === "doctor" && password === "password123") {
-      localStorage.setItem("isLoggedIn", "true");
-      navigate("/dashboard");
-    } else {
-      alert("Invalid credentials. Try doctor / password123");
+  async function openHostedUI() {
+    try {
+      // This triggers redirect to the Cognito Hosted UI
+      Auth.federatedSignIn();
+    } catch (err) {
+      console.error("federatedSignIn error", err);
     }
-  };
+  }
+
+  // If user has already been redirected back, Amplify can populate session in App.tsx useEffect
+  // But we'll also provide a manual "finish login" to fetch the session and save tokens
+  async function finishLogin() {
+    try {
+      const session = await Auth.currentSession();
+      const idToken = session.getIdToken().getJwtToken();
+      const userInfo = await Auth.currentAuthenticatedUser();
+      const attributes = userInfo?.attributes || {};
+      const groups = userInfo?.signInUserSession?.idToken?.payload["cognito:groups"] || [];
+      const user = { username: userInfo.username, email: attributes.email, groups };
+      setSession(idToken, user);
+      alert("Logged in via Amplify session.");
+    } catch (err) {
+      console.error("finishLogin error", err);
+      alert("Not logged in yet. Click 'Open Hosted UI' to sign in.");
+    }
+  }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
-      <div className="bg-white p-8 rounded-2xl shadow-md w-80">
-        <h1 className="text-2xl font-bold mb-6 text-center">Doctor Login</h1>
-        <form onSubmit={handleLogin} className="flex flex-col gap-4">
-          <input
-            type="text"
-            placeholder="Username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            className="border p-2 rounded-md focus:ring-2 focus:ring-blue-400 outline-none"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="border p-2 rounded-md focus:ring-2 focus:ring-blue-400 outline-none"
-          />
-          <button
-            type="submit"
-            className="bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 transition"
-          >
-            Login
-          </button>
-        </form>
+    <div>
+      <p>Use the hosted Cognito sign-in page to log in.</p>
+      <button onClick={openHostedUI}>Open Hosted Login (Cognito)</button>
+      <div style={{ marginTop: 12 }}>
+        <em>After signing in, you may need to click this to finish the flow:</em>
+        <br />
+        <button onClick={finishLogin} style={{ marginTop: 8 }}>
+          Finish Login (check session)
+        </button>
       </div>
     </div>
   );

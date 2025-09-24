@@ -1,37 +1,112 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+// pages/Dashboard.tsx
+import React, { useContext, useEffect, useState } from "react";
+import { AuthContext } from "../App";
+
+type FileItem = {
+  patientId?: string;
+  fileId: string; // S3 key (we will use as id)
+  originalName?: string;
+  uploadDate?: string;
+};
 
 export default function Dashboard() {
-  const navigate = useNavigate();
-  const [patients, setPatients] = useState<any[]>([]);
+  const { idToken, user } = useContext(AuthContext);
+  const [patientId, setPatientId] = useState<string>(user?.username ?? "");
+  const [items, setItems] = useState<FileItem[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  async function listFiles(forPatient: string) {
+    if (!idToken) {
+      alert("Not authenticated");
+      return;
+    }
+    try {
+      setLoading(true);
+      const apiBase = import.meta.env.VITE_API_URL;
+      const res = await fetch(`${apiBase}/files/${encodeURIComponent(forPatient)}`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      if (!res.ok) throw new Error("list failed");
+      const data = await res.json();
+      // Expect { items: [...] } or array
+      const arr: FileItem[] = data.items ?? data;
+      setItems(arr);
+    } catch (err) {
+      console.error(err);
+      alert("List error: " + (err as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function download(key: string) {
+    if (!idToken) {
+      alert("Not authenticated");
+      return;
+    }
+    try {
+      const apiBase = import.meta.env.VITE_API_URL;
+      const res = await fetch(`${apiBase}/download-url`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ key }),
+      });
+      if (!res.ok) throw new Error("download-url failed");
+      const { downloadUrl } = await res.json();
+      // open in new tab
+      window.open(downloadUrl, "_blank");
+    } catch (err) {
+      console.error(err);
+      alert("download error: " + (err as Error).message);
+    }
+  }
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem("isLoggedIn");
-    if (!isLoggedIn) {
-      navigate("/login");
-    }
-
-    // TEMP: Mock patients
-    setPatients([
-      { name: "Patient A", status: "Uploaded form" },
-      { name: "Patient B", status: "Uploaded lab results" },
-    ]);
-  }, [navigate]);
+    if (patientId) listFiles(patientId);
+  }, []);
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white rounded-2xl shadow-md mt-10">
-      <h1 className="text-2xl font-bold mb-4">Doctor Dashboard</h1>
-      <ul className="space-y-2">
-        {patients.map((p, idx) => (
-          <li
-            key={idx}
-            className="border rounded-md p-3 flex justify-between items-center"
-          >
-            <span className="font-medium">{p.name}</span>
-            <span className="text-sm text-gray-500">{p.status}</span>
-          </li>
-        ))}
-      </ul>
+    <div>
+      <div style={{ marginBottom: 8 }}>
+        <label>
+          Patient ID (username):{" "}
+          <input value={patientId} onChange={(e) => setPatientId(e.target.value)} />
+        </label>
+        <button onClick={() => listFiles(patientId)} style={{ marginLeft: 8 }}>
+          List files
+        </button>
+      </div>
+
+      {loading ? (
+        <div>Loading…</div>
+      ) : items.length === 0 ? (
+        <div>No files found</div>
+      ) : (
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: "left", padding: 6 }}>File</th>
+              <th style={{ textAlign: "left", padding: 6 }}>Uploaded</th>
+              <th style={{ padding: 6 }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((it) => (
+              <tr key={it.fileId}>
+                <td style={{ padding: 6 }}>{it.originalName ?? it.fileId}</td>
+                <td style={{ padding: 6 }}>{it.uploadDate ?? "-"}</td>
+                <td style={{ padding: 6 }}>
+                  <button onClick={() => download(it.fileId)}>Download</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }
