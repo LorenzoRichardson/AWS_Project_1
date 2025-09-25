@@ -79,15 +79,23 @@ export default function App() {
             </div>
 
             <div style={{ display: "flex", gap: 16 }}>
-              <div style={{ flex: 1 }}>
-                <h3>Upload (Patient)</h3>
-                <Upload />
-              </div>
-              <div style={{ flex: 1 }}>
-                <h3>Dashboard (Doctor / Patient)</h3>
-                <Dashboard />
-              </div>
+              {/* Patient side */}
+              {user?.groups?.includes("patients") && (
+                <div style={{ flex: 1 }}>
+                  <h3>Upload (Patient)</h3>
+                  <Upload />
+                </div>
+              )}
+
+              {/* Doctor side */}
+              {user?.groups?.includes("doctors") && (
+                <div style={{ flex: 1 }}>
+                  <h3>Dashboard (Doctor)</h3>
+                  <Dashboard />
+                </div>
+              )}
             </div>
+
           </>
         )}
       </div>
