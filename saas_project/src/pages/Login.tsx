@@ -2,21 +2,21 @@
 import { useContext } from "react";
 import { Auth } from "aws-amplify";
 import { AuthContext } from "../App";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const { setSession } = useContext(AuthContext);
+  const navigate = useNavigate();
 
   async function openHostedUI() {
     try {
-      // This triggers redirect to the Cognito Hosted UI
+      // Redirect to Cognito Hosted UI
       Auth.federatedSignIn();
     } catch (err) {
       console.error("federatedSignIn error", err);
     }
   }
 
-  // If user has already been redirected back, Amplify can populate session in App.tsx useEffect
-  // But we'll also provide a manual "finish login" to fetch the session and save tokens
   async function finishLogin() {
     try {
       const session = await Auth.currentSession();
@@ -25,8 +25,17 @@ export default function Login() {
       const attributes = userInfo?.attributes || {};
       const groups = userInfo?.signInUserSession?.idToken?.payload["cognito:groups"] || [];
       const user = { username: userInfo.username, email: attributes.email, groups };
+
       setSession(idToken, user);
-      alert("Logged in via Amplify session.");
+
+      // redirect immediately based on group
+      if (groups.includes("patients")) {
+        navigate("/upload", { replace: true });
+      } else if (groups.includes("doctors")) {
+        navigate("/dashboard", { replace: true });
+      } else {
+        navigate("/", { replace: true }); // fallback
+      }
     } catch (err) {
       console.error("finishLogin error", err);
       alert("Not logged in yet. Click 'Open Hosted UI' to sign in.");
