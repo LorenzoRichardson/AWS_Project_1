@@ -1,6 +1,5 @@
-// App.tsx
 import React, { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Upload from "./pages/Upload";
 import Dashboard from "./pages/Dashboard";
@@ -22,39 +21,12 @@ export const AuthContext = React.createContext<{
   setSession: () => {},
 });
 
-function AppContent() {
+function AppContent({ children }: { children: React.ReactNode }) {
   const [idToken, setIdToken] = useState<string | null>(() => sessionStorage.getItem("idToken"));
   const [user, setUser] = useState<User | null>(() => {
     const raw = sessionStorage.getItem("user");
     return raw ? JSON.parse(raw) : null;
   });
-
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    async function tryHydrate() {
-      try {
-        const session = await Auth.currentSession();
-        const token = session.getIdToken().getJwtToken();
-        const userInfo = await Auth.currentAuthenticatedUser();
-        const attributes = userInfo?.attributes || {};
-        const groups = userInfo?.signInUserSession?.idToken?.payload["cognito:groups"] || [];
-        const u = { username: userInfo.username, email: attributes.email, groups };
-
-        sessionStorage.setItem("idToken", token);
-        sessionStorage.setItem("user", JSON.stringify(u));
-        setIdToken(token);
-        setUser(u);
-
-        // redirect based on group
-        if (groups.includes("patients")) navigate("/upload", { replace: true });
-        if (groups.includes("doctors")) navigate("/dashboard", { replace: true });
-      } catch {
-        // not logged in
-      }
-    }
-    if (!idToken) tryHydrate();
-  }, [idToken, navigate]);
 
   function setSession(token: string | null, u: User | null) {
     if (token) sessionStorage.setItem("idToken", token);
@@ -65,46 +37,60 @@ function AppContent() {
     setUser(u);
   }
 
-  return (
-    <AuthContext.Provider value={{ idToken, user, setSession }}>
-      <div style={{ padding: 20 }}>
-        <h2>HIPAA Demo App (School Project)</h2>
+  useEffect(() => {
+    async function hydrate() {
+      try {
+        const session = await Auth.currentSession();
+        const token = session.getIdToken().getJwtToken();
+        const userInfo = await Auth.currentAuthenticatedUser();
+        const attributes = userInfo?.attributes || {};
+        const groups = userInfo?.signInUserSession?.idToken?.payload["cognito:groups"] || [];
+        const u = { username: userInfo.username, email: attributes.email, groups };
+        setSession(token, u);
+      } catch {
+        // not logged in
+      }
+    }
+    if (!idToken) hydrate();
+  }, [idToken]);
 
-        {!idToken ? (
-          <Login />
-        ) : (
-          <div style={{ marginBottom: 12 }}>
-            <strong>Signed in as:</strong> {user?.email ?? user?.username}{" "}
-            <button
-              onClick={async () => {
-                await Auth.signOut();
-                setSession(null, null);
-                navigate("/", { replace: true });
-              }}
-            >
-              Sign out
-            </button>
-          </div>
-        )}
-      </div>
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={{ idToken, user, setSession }}>{children}</AuthContext.Provider>;
+}
+
+// ProtectedRoute wrapper
+function ProtectedRoute({ children, allowedGroups }: { children: React.ReactNode; allowedGroups: string[] }) {
+  const { user } = React.useContext(AuthContext);
+
+  if (!user) return <Navigate to="/" />;
+  if (!user.groups?.some(g => allowedGroups.includes(g))) return <Navigate to="/" />;
+  return <>{children}</>;
 }
 
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Main app logic */}
-        <Route path="/" element={<AppContent />} />
-
-        {/* Protected routes (you can add wrappers later if needed) */}
-        <Route path="/upload" element={<Upload />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-
-        {/* Catch-all: send back to home */}
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+      <AppContent>
+        <Routes>
+          <Route path="/" element={<Login />} />
+          <Route
+            path="/upload"
+            element={
+              <ProtectedRoute allowedGroups={["patients"]}>
+                <Upload />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute allowedGroups={["doctors"]}>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </AppContent>
     </BrowserRouter>
   );
 }

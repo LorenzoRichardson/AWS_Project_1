@@ -9,7 +9,7 @@ export default function Login() {
 
   async function openHostedUI() {
     try {
-      await Auth.federatedSignIn();
+      await Auth.federatedSignIn(); // Opens Cognito hosted UI
     } catch (err) {
       console.error("federatedSignIn error", err);
     }
@@ -20,6 +20,7 @@ export default function Login() {
       try {
         console.log("Attempting to finish login after redirect...");
 
+        // Wait a bit in case the redirect just happened
         const session = await Auth.currentSession();
         const idToken = session.getIdToken().getJwtToken();
         const userInfo = await Auth.currentAuthenticatedUser();
@@ -30,6 +31,7 @@ export default function Login() {
 
         setSession(idToken, user);
 
+        // Redirect based on groups
         if (groups.includes("patients")) {
           navigate("/upload", { replace: true });
         } else if (groups.includes("doctors")) {
@@ -39,6 +41,13 @@ export default function Login() {
         }
       } catch (err) {
         console.error("finishLogin error:", err);
+
+        // If no current user, the page likely loaded before Cognito redirect completed
+        if (err === "No current user") {
+          console.log("No user yet, waiting briefly and retrying...");
+          setTimeout(finishLogin, 500); // retry after 0.5s
+        }
+
         console.log("Cookies at redirect:", document.cookie);
       }
     }
