@@ -10,7 +10,7 @@ const userPoolId = import.meta.env.VITE_USER_POOL_ID;
 const userPoolWebClientId = import.meta.env.VITE_USER_POOL_CLIENT_ID;
 
 // ⚡ Correct Cognito domain casing
-const domain = "us-east-2-wRtVXL7e0.auth.us-east-2.amazoncognito.com";
+const domain = "us-east-2wRtVXL7e0.auth.us-east-2.amazoncognito.com";
 
 // Your ngrok URL with https and trailing slash
 const appUrl = import.meta.env.VITE_APP_URL;
