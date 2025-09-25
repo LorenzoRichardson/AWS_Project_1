@@ -1,31 +1,31 @@
+// src/main.tsx
 import React from "react";
 import ReactDOM from "react-dom/client";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { initAmplify } from "./amplify";
+import AuthGate from "./AuthGate";
 import App from "./App";
-import { Amplify } from "aws-amplify";
 
-const region = import.meta.env.VITE_COGNITO_REGION;
-const userPoolId = import.meta.env.VITE_USER_POOL_ID;
-const userPoolWebClientId = import.meta.env.VITE_USER_POOL_CLIENT_ID;
-const domain = import.meta.env.VITE_COGNITO_DOMAIN;
-const appUrl = import.meta.env.VITE_APP_URL;
+initAmplify();
 
-Amplify.configure({
-  Auth: {
-    region,
-    userPoolId,
-    userPoolWebClientId,
-    oauth: {
-      domain,
-      scope: ["openid", "email", "profile"],
-      redirectSignIn: appUrl,
-      redirectSignOut: appUrl,
-      responseType: "code", // authorization code grant
-    },
-  } as any,
-});
+function UploadDashboard() {
+  return <h1 style={{ textAlign: "center", marginTop: "20vh" }}>✅ Upload Dashboard</h1>;
+}
+
+function DoctorDashboard() {
+  return <h1 style={{ textAlign: "center", marginTop: "20vh" }}>👨‍⚕️ Doctor Dashboard</h1>;
+}
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <App />
+    <BrowserRouter>
+      <AuthGate>
+        <Routes>
+          <Route path="/" element={<App />} />
+          <Route path="/upload" element={<UploadDashboard />} />
+          <Route path="/doctor" element={<DoctorDashboard />} />
+        </Routes>
+      </AuthGate>
+    </BrowserRouter>
   </React.StrictMode>
 );

@@ -11,14 +11,15 @@
     "start": "react-scripts start --host 0.0.0.0"
   },
   "dependencies": {
-    "aws-amplify": "^5.3.27",
+    "@aws-amplify/ui-react": "^6.12.1",
+    "aws-amplify": "^6.15.6",
     "aws-sdk": "^2.1692.0",
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "react-router-dom": "^7.9.1"
+    "react-router-dom": "^7.9.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",

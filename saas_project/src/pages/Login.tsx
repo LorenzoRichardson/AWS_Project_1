@@ -1,62 +1,80 @@
-// Login.tsx
-import { useContext, useEffect } from "react";
-import { Auth } from "aws-amplify";
+import React, { useState, useContext } from "react";
+import { signInWithRedirect, fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
 import { AuthContext } from "../App";
 import { useNavigate } from "react-router-dom";
 
 export default function Login() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const { setSession } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  async function openHostedUI() {
+  const handleLogin = async () => {
     try {
-      await Auth.federatedSignIn();
-    } catch (err) {
-      console.error("federatedSignIn error", err);
+      setLoading(true);
+      setError("");
+
+      // Redirect user to Cognito Hosted UI
+      await signInWithRedirect();
+    } catch (err: any) {
+      setError("Login failed. Please try again.");
+      setLoading(false);
     }
-  }
+  };
 
-  useEffect(() => {
-    async function finishLogin() {
-      try {
-        console.log("Attempting to finish login after redirect...");
-
-        // Get current Cognito session and user info
-        const session = await Auth.currentSession();
-        const idToken = session.getIdToken().getJwtToken();
-        const userInfo = await Auth.currentAuthenticatedUser();
-
-        const attributes = userInfo?.attributes || {};
-        const groups = userInfo?.signInUserSession?.idToken?.payload["cognito:groups"] || [];
-        const user = { username: userInfo.username, email: attributes.email, groups };
-
-        // Save session in context & sessionStorage
-        setSession(idToken, user);
-
-        // Redirect based on Cognito group
-        if (groups.includes("patients")) {
-          navigate("/upload", { replace: true });
-        } else if (groups.includes("doctors")) {
-          navigate("/dashboard", { replace: true });
-        } else {
-          navigate("/", { replace: true });
-        }
-      } catch (err) {
-        console.error("finishLogin error:", err);
-        console.log("Cookies at redirect:", document.cookie);
+  // Called when redirected back from Cognito
+  const handleFetchSession = async () => {
+    try {
+      const session = await fetchAuthSession();
+      const user = await getCurrentUser();
+      if (session?.tokens?.idToken) {
+        setSession(session);
+        navigate("/upload"); // redirect after login success
       }
+    } catch {
+      setError("Could not fetch session.");
     }
-
-    finishLogin();
-  }, [setSession, navigate]);
+  };
 
   return (
-    <div>
-      <p>Use the hosted Cognito sign-in page to log in.</p>
-      <button onClick={openHostedUI}>Open Hosted Login (Cognito)</button>
-      <p style={{ marginTop: 12 }}>
-        Login should finish automatically if redirected from Cognito.
-      </p>
+    <div style={{ textAlign: "center", marginTop: "20vh" }}>
+      <h1>Sign In</h1>
+
+      {error && <p style={{ color: "red" }}>{error}</p>}
+
+      <button
+        onClick={handleLogin}
+        disabled={loading}
+        style={{
+          padding: "12px 24px",
+          fontSize: "16px",
+          cursor: "pointer",
+          backgroundColor: "#007bff",
+          color: "#fff",
+          border: "none",
+          borderRadius: "5px",
+          marginBottom: "20px",
+        }}
+      >
+        {loading ? "Redirecting..." : "Open Hosted Login"}
+      </button>
+
+      <div>
+        <button
+          onClick={handleFetchSession}
+          style={{
+            padding: "8px 16px",
+            fontSize: "14px",
+            cursor: "pointer",
+            backgroundColor: "#28a745",
+            color: "#fff",
+            border: "none",
+            borderRadius: "5px",
+          }}
+        >
+          Fetch Session (After Login)
+        </button>
+      </div>
     </div>
   );
 }
