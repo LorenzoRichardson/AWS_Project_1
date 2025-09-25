@@ -1,7 +1,6 @@
 // src/amplify.ts
 import { Amplify } from "aws-amplify";
 
-const region = import.meta.env.VITE_COGNITO_REGION as string;
 const userPoolId = import.meta.env.VITE_USER_POOL_ID as string;
 const userPoolClientId = import.meta.env.VITE_USER_POOL_CLIENT_ID as string;
 const domain = import.meta.env.VITE_COGNITO_DOMAIN as string;

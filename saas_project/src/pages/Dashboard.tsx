@@ -10,7 +10,8 @@ type FileItem = {
 };
 
 export default function Dashboard() {
-  const { idToken, user } = useContext(AuthContext);
+  const { session, user } = useContext(AuthContext);
+  const idToken = session?.tokens?.idToken?.toString();
   const [patientId, setPatientId] = useState<string>(user?.username ?? "");
   const [items, setItems] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -29,7 +30,6 @@ export default function Dashboard() {
       });
       if (!res.ok) throw new Error("list failed");
       const data = await res.json();
-      // Expect { items: [...] } or array
       const arr: FileItem[] = data.items ?? data;
       setItems(arr);
     } catch (err) {
@@ -57,11 +57,10 @@ export default function Dashboard() {
       });
       if (!res.ok) throw new Error("download-url failed");
       const { downloadUrl } = await res.json();
-      // open in new tab
       window.open(downloadUrl, "_blank");
     } catch (err) {
       console.error(err);
-      alert("download error: " + (err as Error).message);
+      alert("Download error: " + (err as Error).message);
     }
   }
 

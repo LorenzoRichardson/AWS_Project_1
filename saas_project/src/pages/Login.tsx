@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import { useState, useContext } from "react";
 import { signInWithRedirect, fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
 import { AuthContext } from "../App";
 import { useNavigate } from "react-router-dom";
@@ -6,33 +6,34 @@ import { useNavigate } from "react-router-dom";
 export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { setSession } = useContext(AuthContext);
+  const { setSession, setUser } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogin = async () => {
     try {
       setLoading(true);
       setError("");
-
-      // Redirect user to Cognito Hosted UI
-      await signInWithRedirect();
+      await signInWithRedirect(); // redirects to Cognito Hosted UI
     } catch (err: any) {
       setError("Login failed. Please try again.");
       setLoading(false);
     }
   };
 
-  // Called when redirected back from Cognito
   const handleFetchSession = async () => {
     try {
       const session = await fetchAuthSession();
       const user = await getCurrentUser();
+
       if (session?.tokens?.idToken) {
         setSession(session);
+        setUser(user);
         navigate("/upload"); // redirect after login success
+      } else {
+        setError("No valid session found. Try logging in again.");
       }
     } catch {
-      setError("Could not fetch session.");
+      setError("Could not fetch session. Try logging in again.");
     }
   };
 
