@@ -1,17 +1,15 @@
-// pages/Dashboard.tsx
 import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../App";
 
 type FileItem = {
   patientId?: string;
-  fileId: string; // S3 key (we will use as id)
+  fileId: string;
   originalName?: string;
   uploadDate?: string;
 };
 
 export default function Dashboard() {
-  const { session, user } = useContext(AuthContext);
-  const idToken = session?.tokens?.idToken?.toString();
+  const { idToken, user } = useContext(AuthContext);
   const [patientId, setPatientId] = useState<string>(user?.username ?? "");
   const [items, setItems] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -30,8 +28,7 @@ export default function Dashboard() {
       });
       if (!res.ok) throw new Error("list failed");
       const data = await res.json();
-      const arr: FileItem[] = data.items ?? data;
-      setItems(arr);
+      setItems(data.items ?? data);
     } catch (err) {
       console.error(err);
       alert("List error: " + (err as Error).message);
@@ -60,7 +57,7 @@ export default function Dashboard() {
       window.open(downloadUrl, "_blank");
     } catch (err) {
       console.error(err);
-      alert("Download error: " + (err as Error).message);
+      alert("download error: " + (err as Error).message);
     }
   }
 
@@ -69,37 +66,38 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div>
-      <div style={{ marginBottom: 8 }}>
-        <label>
-          Patient ID (username):{" "}
-          <input value={patientId} onChange={(e) => setPatientId(e.target.value)} />
-        </label>
-        <button onClick={() => listFiles(patientId)} style={{ marginLeft: 8 }}>
-          List files
-        </button>
-      </div>
+    <div style={{ padding: "2rem" }}>
+      <h2>📂 Doctor Dashboard</h2>
+      <label>
+        Patient ID:{" "}
+        <input
+          value={patientId}
+          onChange={(e) => setPatientId(e.target.value)}
+          style={{ marginRight: "1rem" }}
+        />
+      </label>
+      <button onClick={() => listFiles(patientId)}>🔍 Load Files</button>
 
       {loading ? (
-        <div>Loading…</div>
+        <p>Loading files…</p>
       ) : items.length === 0 ? (
-        <div>No files found</div>
+        <p>No files found.</p>
       ) : (
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <table style={{ width: "100%", marginTop: "1rem", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              <th style={{ textAlign: "left", padding: 6 }}>File</th>
-              <th style={{ textAlign: "left", padding: 6 }}>Uploaded</th>
-              <th style={{ padding: 6 }}>Actions</th>
+              <th style={{ textAlign: "left", padding: "0.5rem" }}>File</th>
+              <th style={{ textAlign: "left", padding: "0.5rem" }}>Uploaded</th>
+              <th style={{ padding: "0.5rem" }}>Actions</th>
             </tr>
           </thead>
           <tbody>
             {items.map((it) => (
               <tr key={it.fileId}>
-                <td style={{ padding: 6 }}>{it.originalName ?? it.fileId}</td>
-                <td style={{ padding: 6 }}>{it.uploadDate ?? "-"}</td>
-                <td style={{ padding: 6 }}>
-                  <button onClick={() => download(it.fileId)}>Download</button>
+                <td style={{ padding: "0.5rem" }}>{it.originalName ?? it.fileId}</td>
+                <td style={{ padding: "0.5rem" }}>{it.uploadDate ?? "-"}</td>
+                <td style={{ padding: "0.5rem" }}>
+                  <button onClick={() => download(it.fileId)}>⬇️ Download</button>
                 </td>
               </tr>
             ))}

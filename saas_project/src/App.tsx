@@ -1,10 +1,13 @@
 import { createContext, useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
+import Upload from "./pages/Upload";
+import Dashboard from "./pages/Dashboard";
 
 interface AuthState {
   session: any;
   user: any;
+  idToken?: string;
   setSession: (s: any) => void;
   setUser: (u: any) => void;
 }
@@ -12,6 +15,7 @@ interface AuthState {
 export const AuthContext = createContext<AuthState>({
   session: null,
   user: null,
+  idToken: "",
   setSession: () => {},
   setUser: () => {},
 });
@@ -21,27 +25,19 @@ export default function App() {
   const [user, setUser] = useState<any>(null);
 
   return (
-    <AuthContext.Provider value={{ session, user, setSession, setUser }}>
+    <AuthContext.Provider
+      value={{
+        session,
+        user,
+        idToken: session?.tokens?.idToken?.toString() || "",
+        setSession,
+        setUser,
+      }}
+    >
       <Routes>
         <Route path="/" element={<Login />} />
-        <Route
-          path="/upload"
-          element={
-            <div style={{ textAlign: "center", marginTop: "20vh" }}>
-              <h1>✅ Upload Dashboard</h1>
-              <p>Welcome! You are signed in.</p>
-            </div>
-          }
-        />
-        <Route
-          path="/doctor"
-          element={
-            <div style={{ textAlign: "center", marginTop: "20vh" }}>
-              <h1>👨‍⚕️ Doctor Dashboard</h1>
-              <p>Welcome! You are signed in.</p>
-            </div>
-          }
-        />
+        <Route path="/upload" element={<Upload />} />
+        <Route path="/doctor" element={<Dashboard />} />
       </Routes>
     </AuthContext.Provider>
   );

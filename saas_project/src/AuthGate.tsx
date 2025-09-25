@@ -1,22 +1,39 @@
-// src/AuthGate.tsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { fetchAuthSession, getCurrentUser, signInWithRedirect } from "aws-amplify/auth";
 import { useNavigate } from "react-router-dom";
+import { AuthContext } from "./App";
 
 export default function AuthGate({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [signedIn, setSignedIn] = useState(false);
   const navigate = useNavigate();
+  const { setSession, setUser } = useContext(AuthContext);
 
   useEffect(() => {
     (async () => {
       try {
         const session = await fetchAuthSession();
         if (session?.tokens?.idToken) {
+          setSession(session);
+          const user = await getCurrentUser();
+          setUser(user);
           setSignedIn(true);
-          await getCurrentUser().catch(() => {});
-          // redirect to /upload or /doctor after login
-          navigate("/upload");
+
+          // Read groups safely (string or array)
+          const token: any = session.tokens?.idToken;
+          const raw = token?.payload?.["cognito:groups"];
+          let groups: string[] = [];
+          if (Array.isArray(raw)) groups = raw.map(String);
+          else if (typeof raw === "string") groups = [raw];
+
+          // Route by group
+          if (groups.includes("doctors")) {
+            navigate("/doctor");
+          } else if (groups.includes("patients")) {
+            navigate("/upload");
+          } else {
+            navigate("/upload");
+          }
         } else {
           setSignedIn(false);
         }
@@ -26,7 +43,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         setLoading(false);
       }
     })();
-  }, [navigate]);
+  }, [navigate, setSession, setUser]);
 
   if (loading) return <div>Loading...</div>;
 
