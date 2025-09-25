@@ -9,50 +9,50 @@ export default function Login() {
 
   async function openHostedUI() {
     try {
-      await Auth.federatedSignIn(); // Opens Cognito hosted UI
+      await Auth.federatedSignIn();
     } catch (err) {
       console.error("federatedSignIn error", err);
     }
   }
 
   useEffect(() => {
+    let mounted = true;
+
     async function finishLogin() {
       try {
         console.log("Attempting to finish login after redirect...");
 
-        // Wait a bit in case the redirect just happened
+        // Tiny delay to let Cognito finish redirect code exchange
+        await new Promise(res => setTimeout(res, 500));
+
         const session = await Auth.currentSession();
-        const idToken = session.getIdToken().getJwtToken();
+        console.log("Got session:", session);
+
         const userInfo = await Auth.currentAuthenticatedUser();
+        console.log("User info:", userInfo);
 
         const attributes = userInfo?.attributes || {};
         const groups = userInfo?.signInUserSession?.idToken?.payload["cognito:groups"] || [];
         const user = { username: userInfo.username, email: attributes.email, groups };
 
-        setSession(idToken, user);
+        if (mounted) setSession(session.getIdToken().getJwtToken(), user);
 
-        // Redirect based on groups
-        if (groups.includes("patients")) {
-          navigate("/upload", { replace: true });
-        } else if (groups.includes("doctors")) {
-          navigate("/dashboard", { replace: true });
-        } else {
-          navigate("/", { replace: true });
-        }
+        // redirect based on group
+        if (groups.includes("patients")) navigate("/upload", { replace: true });
+        else if (groups.includes("doctors")) navigate("/dashboard", { replace: true });
+        else navigate("/", { replace: true });
+
       } catch (err) {
         console.error("finishLogin error:", err);
-
-        // If no current user, the page likely loaded before Cognito redirect completed
-        if (err === "No current user") {
-          console.log("No user yet, waiting briefly and retrying...");
-          setTimeout(finishLogin, 500); // retry after 0.5s
-        }
-
         console.log("Cookies at redirect:", document.cookie);
       }
     }
 
     finishLogin();
+
+    return () => {
+      mounted = false;
+    };
   }, [setSession, navigate]);
 
   return (
