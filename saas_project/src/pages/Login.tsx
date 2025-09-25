@@ -1,3 +1,4 @@
+// Login.tsx
 import { useContext, useEffect } from "react";
 import { Auth } from "aws-amplify";
 import { AuthContext } from "../App";
@@ -16,32 +17,30 @@ export default function Login() {
   }
 
   useEffect(() => {
-    let mounted = true;
-
     async function finishLogin() {
       try {
         console.log("Attempting to finish login after redirect...");
 
-        // Tiny delay to let Cognito finish redirect code exchange
-        await new Promise(res => setTimeout(res, 500));
-
+        // Get current Cognito session and user info
         const session = await Auth.currentSession();
-        console.log("Got session:", session);
-
+        const idToken = session.getIdToken().getJwtToken();
         const userInfo = await Auth.currentAuthenticatedUser();
-        console.log("User info:", userInfo);
 
         const attributes = userInfo?.attributes || {};
         const groups = userInfo?.signInUserSession?.idToken?.payload["cognito:groups"] || [];
         const user = { username: userInfo.username, email: attributes.email, groups };
 
-        if (mounted) setSession(session.getIdToken().getJwtToken(), user);
+        // Save session in context & sessionStorage
+        setSession(idToken, user);
 
-        // redirect based on group
-        if (groups.includes("patients")) navigate("/upload", { replace: true });
-        else if (groups.includes("doctors")) navigate("/dashboard", { replace: true });
-        else navigate("/", { replace: true });
-
+        // Redirect based on Cognito group
+        if (groups.includes("patients")) {
+          navigate("/upload", { replace: true });
+        } else if (groups.includes("doctors")) {
+          navigate("/dashboard", { replace: true });
+        } else {
+          navigate("/", { replace: true });
+        }
       } catch (err) {
         console.error("finishLogin error:", err);
         console.log("Cookies at redirect:", document.cookie);
@@ -49,10 +48,6 @@ export default function Login() {
     }
 
     finishLogin();
-
-    return () => {
-      mounted = false;
-    };
   }, [setSession, navigate]);
 
   return (
